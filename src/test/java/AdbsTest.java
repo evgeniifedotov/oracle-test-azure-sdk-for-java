@@ -9,25 +9,39 @@ import com.azure.identity.IntelliJCredential;
 import com.azure.identity.IntelliJCredentialBuilder;
 import com.azure.resourcemanager.oracledatabase.OracleDatabaseManager;
 import com.azure.resourcemanager.oracledatabase.models.AutonomousDatabase;
+import com.azure.resourcemanager.resources.fluent.ResourceManagementClient;
+import com.azure.resourcemanager.resources.implementation.ResourceManagementClientBuilder;
 import com.oracle.pic.orp.Adbs;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import javax.annotation.processing.SupportedAnnotationTypes;
 
 public class AdbsTest {
-    com.azure.resourcemanager.oracledatabase.OracleDatabaseManager manager;
-    String ADBS_ID = "subscriptions/4aa7be2d-ffd6-4657-828b-31ca25e39985/resourceGroups/CRDRacctestRG-250604021035673240/providers/Oracle.Database/autonomousDatabases/OFakeO250604021035673240";
-    @BeforeEach
-    public void setup()
-    {
-        AzureProfile profile = new AzureProfile("9195a8c5-6bc8-41cb-80ef-2e772dbc1f73","4aa7be2d-ffd6-4657-828b-31ca25e39985",AzureCloud.AZURE_PUBLIC_CLOUD);
+    private static OracleDatabaseManager dbManager;
+    private static AutonomousDatabase testDb;
+    private static ResourceManagementClient rmClient;
+    private String ADBS_ID = "subscriptions/4aa7be2d-ffd6-4657-828b-31ca25e39985/resourceGroups/CRDRacctestRG-250604021035673240/providers/Oracle.Database/autonomousDatabases/OFakeO250604021035673240";
+
+ //   var client = new Microsoft.Azure.Management.Resources.ResourceManagementClient(credentials);
+   // var result = c.ResourceGroups.CreateOrUpdateAsync("MyResourceGroup", new Microsoft.Azure.Management.Resources.Models.ResourceGroup("West US"), new System.Threading.CancellationToken()).Result;
+    @BeforeAll
+    static void setUp() {
+        AzureProfile profile = new AzureProfile(TENANT_ID,SUBSCRIPTION_ID,AzureCloud.AZURE_PUBLIC_CLOUD);
         IntelliJCredential cr = new IntelliJCredentialBuilder()
                 .tenantId("9195a8c5-6bc8-41cb-80ef-2e772dbc1f73")
                 .build();
-        manager = OracleDatabaseManager
+        dbManager = OracleDatabaseManager
                 .authenticate(cr, profile);
+rmClient = new ResourceManagementClientBuilder().subscriptionId().buildClient();
+        testDb = manager.autonomousDatabases().define("SDKTEST").withRegion("useast").withExistingResourceGroup()
+    }
+    @BeforeEach
+    public void setup()
+    {
+
     }
     @Test
     public void getAdbsByName()
