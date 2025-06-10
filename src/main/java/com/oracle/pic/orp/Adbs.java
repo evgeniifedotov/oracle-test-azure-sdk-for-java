@@ -23,6 +23,22 @@ public class Adbs {
                 .create();
     }
 
+    public static AutonomousDatabase Update(OracleDatabaseManager dbManager, String originalDbId) {
+        AutonomousDatabase originalDb = Adbs.GetById(dbManager, originalDbId).getValue();
+        return originalDb.update()
+                .withProperties(createAdbsUpdateProperties())
+                .apply();
+    }
+
+    public static AutonomousDatabase UpdateBackupRetention(OracleDatabaseManager dbManager, String originalDbId) {
+        AutonomousDatabase originalDb = Adbs.GetById(dbManager, originalDbId).getValue();
+        return originalDb.update()
+                .withProperties(new AutonomousDatabaseUpdateProperties()
+                        .withBackupRetentionPeriodInDays(20))
+                .apply();
+    }
+
+
     public static AutonomousDatabase CreateCRDR (OracleDatabaseManager dbManager, String name, Region region, ResourceGroup rg, Network nw, String originalDbId)
     {
         Response<AutonomousDatabase> originalDb = Adbs.GetById(dbManager, originalDbId);
@@ -55,6 +71,16 @@ public class Adbs {
                 .withAutonomousMaintenanceScheduleType(AutonomousMaintenanceScheduleType.REGULAR)
                 .withVnetId(nw.id())
                 .withCustomerContacts(customers);
+    }
+    // Warning
+    // Cannot simultaneously update the Autonomous Database backup retention period and other attributes
+    // Seems that invoking update with same values results in a bad request. So you can run test once and then it fails. You need to change values every run
+    private static AutonomousDatabaseUpdateProperties createAdbsUpdateProperties()
+    {
+        return new AutonomousDatabaseUpdateProperties()
+                .withComputeCount(3.0)
+                .withIsAutoScalingEnabled(true)
+                .withIsAutoScalingForStorageEnabled(true);
     }
 
     private static AutonomousDatabaseBaseProperties createAdbsCRDRProperties(String name, Network nw, AutonomousDatabase originalDb)

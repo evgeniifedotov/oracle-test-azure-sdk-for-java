@@ -84,6 +84,28 @@ public class AdbsTest {
         Assertions.assertNotNull(testDbCRDR.id());
     }
 
+    @Test
+    @Order(4)
+    public void updateAdbs()
+    {
+        testDb = Adbs.Update(dbManager,
+                "subscriptions/4aa7be2d-ffd6-4657-828b-31ca25e39985/resourceGroups/java-sdk-test-rg/providers/Oracle.Database/autonomousDatabases/javasdktestadbs");
+        Assertions.assertNotNull(testDb);
+        Assertions.assertEquals(3.0, testDb.properties().computeCount());
+        Assertions.assertTrue(testDb.properties().isAutoScalingEnabled());
+        Assertions.assertTrue(testDb.properties().isAutoScalingForStorageEnabled());
+    }
+
+    @Test
+    @Order(5)
+    public void updateAdbsBackupRetention()
+    {
+        testDb = Adbs.UpdateBackupRetention(dbManager,
+                "subscriptions/4aa7be2d-ffd6-4657-828b-31ca25e39985/resourceGroups/java-sdk-test-rg/providers/Oracle.Database/autonomousDatabases/javasdktestadbs");
+        Assertions.assertNotNull(testDb);
+        Assertions.assertEquals(20, testDb.properties().backupRetentionPeriodInDays());
+    }
+
     private static Network CreateVnet(AzureResourceManager.Authenticated azRm, String name, Region region){
      return  azRm.withTenantId(TENANT_ID)
                .withSubscription(SUBSCRIPTION_ID).networks().define(name)
