@@ -23,6 +23,16 @@ public class Adbs {
                 .create();
     }
 
+    public static AutonomousDatabase CreateCRDR (OracleDatabaseManager dbManager, String name, Region region, ResourceGroup rg, Network nw, String originalDbId)
+    {
+        Response<AutonomousDatabase> originalDb = Adbs.GetById(dbManager, originalDbId);
+       return dbManager.autonomousDatabases().define(name)
+                .withRegion(region)
+                .withExistingResourceGroup(rg.name())
+                .withProperties(createAdbsCRDRProperties(name, nw, originalDb.getValue()))
+                .create();
+    }
+
     private static AutonomousDatabaseBaseProperties createAdbsProperties(String name, Network nw)
     {
         ArrayList<CustomerContact> customers =  new ArrayList<>();
@@ -38,13 +48,38 @@ public class Adbs {
                 .withIsMtlsConnectionRequired(false)
                 .withDataStorageSizeInTbs(1)
                 .withDbWorkload(WorkloadType.DW)
-                .withAdminPassword("T")
+                .withAdminPassword("TestPass#2024#")
                 .withDbVersion("19c")
                 .withSubnetId(nw.subnets().get("delegated").id())
                 .withPermissionLevel(PermissionLevelType.RESTRICTED)
                 .withAutonomousMaintenanceScheduleType(AutonomousMaintenanceScheduleType.REGULAR)
                 .withVnetId(nw.id())
                 .withCustomerContacts(customers);
+    }
+
+    private static AutonomousDatabaseBaseProperties createAdbsCRDRProperties(String name, Network nw, AutonomousDatabase originalDb)
+    {
+        return new AutonomousDatabaseCrossRegionDisasterRecoveryProperties()
+                .withDisplayName(name)
+                .withComputeModel(originalDb.properties().computeModel())
+                .withComputeCount(originalDb.properties().computeCount())
+                .withLicenseModel(originalDb.properties().licenseModel())
+                .withBackupRetentionPeriodInDays(originalDb.properties().backupRetentionPeriodInDays())
+                .withIsAutoScalingEnabled(originalDb.properties().isAutoScalingEnabled())
+                .withIsAutoScalingForStorageEnabled(originalDb.properties().isAutoScalingForStorageEnabled())
+                .withIsMtlsConnectionRequired(originalDb.properties().isMtlsConnectionRequired())
+                .withDataStorageSizeInTbs(originalDb.properties().dataStorageSizeInTbs())
+                .withDbWorkload(originalDb.properties().dbWorkload())
+                .withAdminPassword(originalDb.properties().adminPassword())
+                .withDbVersion(originalDb.properties().dbVersion())
+                .withSubnetId(nw.subnets().get("delegated").id())
+                .withPermissionLevel(originalDb.properties().permissionLevel())
+                .withAutonomousMaintenanceScheduleType(originalDb.properties().autonomousMaintenanceScheduleType())
+                .withVnetId(nw.id())
+                .withSourceId(originalDb.id())
+                .withSourceOcid(originalDb.properties().ocid())
+                .withRemoteDisasterRecoveryType(DisasterRecoveryType.ADG)
+                .withCustomerContacts(originalDb.properties().customerContacts());
     }
 
 }

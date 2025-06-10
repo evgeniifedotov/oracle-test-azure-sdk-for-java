@@ -24,16 +24,19 @@ import javax.annotation.processing.SupportedAnnotationTypes;
 import java.util.ArrayList;
 import java.util.Map;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class AdbsTest {
     private static OracleDatabaseManager dbManager;
     private static AutonomousDatabase testDb;
     private static AutonomousDatabase testDbCRDR;
     private static AzureResourceManager.Authenticated azRm;
     private final static String TENANT_ID = "91";
-    private final static String SUBSCRIPTION_ID = "4";
+    private final static String SUBSCRIPTION_ID = "4a";
     private final static String RG_NAME = "java-sdk-test-rg";
     private final static String ADBS_NAME = "javasdktestadbs";
+    private final static String ADBS_CRDR_NAME = "javasdktestadbsCRDR";
     private final static String VNET_NAME = "java-sdk-test-vnet";
+    private final static String VNET_FRA_NAME = "java-sdk-test-vnet-fra";
     private final static Region REGION = Region.US_EAST;
     private static ResourceGroup rg;
     private static Network network;
@@ -47,7 +50,7 @@ public class AdbsTest {
                 .authenticate(cr, profile);
         azRm = AzureResourceManager.authenticate(cr, profile);
         rg = createResourceGroup(azRm);
-       network = CreateVnet(azRm);
+       network = CreateVnet(azRm, VNET_NAME, REGION);
     }
 
     @Test
@@ -61,18 +64,30 @@ public class AdbsTest {
 
     @Test
     @Order(2)
-    public void getAdbsByName()
+    public void getAdbsById()
     {
-        Response<AutonomousDatabase> response = Adbs.GetById(dbManager, testDb.id());
+        Response<AutonomousDatabase> response = Adbs.GetById(dbManager, "/subscriptions/4aa7be2d-ffd6-4657-828b-31ca25e39985/resourceGroups/java-sdk-test-rg/providers/Oracle.Database/autonomousDatabases/javasdktestadbs"); //testDb.id());
         Assertions.assertNotNull(response);
         Assertions.assertEquals(200, response.getStatusCode());
-        Assertions.assertNotNull(response.getHeaders().getValue("id"));
+        Assertions.assertEquals("eastus", response.getValue().location());
+        Assertions.assertNotNull(response.getValue().properties().ocid());
     }
 
-    private static Network CreateVnet(AzureResourceManager.Authenticated azRm){
+    @Test
+    @Order(3)
+    public void createAdbsCRDR()
+    {
+        Network network = CreateVnet(azRm, VNET_FRA_NAME, Region.GERMANY_WEST_CENTRAL);
+        testDbCRDR = Adbs.CreateCRDR(dbManager, ADBS_CRDR_NAME, Region.GERMANY_WEST_CENTRAL, rg, network,
+                "subscriptions/4aa7be2d-ffd6-4657-828b-31ca25e39985/resourceGroups/java-sdk-test-rg/providers/Oracle.Database/autonomousDatabases/javasdktestadbs");
+        Assertions.assertNotNull(testDbCRDR);
+        Assertions.assertNotNull(testDbCRDR.id());
+    }
+
+    private static Network CreateVnet(AzureResourceManager.Authenticated azRm, String name, Region region){
      return  azRm.withTenantId(TENANT_ID)
-               .withSubscription(SUBSCRIPTION_ID).networks().define(VNET_NAME)
-               .withRegion(REGION).withExistingResourceGroup(RG_NAME)
+               .withSubscription(SUBSCRIPTION_ID).networks().define(name)
+               .withRegion(region).withExistingResourceGroup(RG_NAME)
                .withAddressSpace("10.0.0.0/16")
              .withSubnet("default", "10.0.0.0/24")
              .defineSubnet("delegated")
